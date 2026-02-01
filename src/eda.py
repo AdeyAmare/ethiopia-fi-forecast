@@ -37,6 +37,9 @@ class EthiopiaFinancialInclusionEDA:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        print("Unique indicator codes in the dataset:")
+        print(self.obs["indicator_code"].unique())
+
         # Logger
         self.logger = logging.getLogger("Task2EDA")
         if not self.logger.hasHandlers():
@@ -220,17 +223,29 @@ class EthiopiaFinancialInclusionEDA:
         infra = self.obs[self.obs["indicator_code"].isin(infra_codes)].sort_values(
             "observation_date"
         )
+        
+        print("Filtered data:")
+        print(infra)
+
+        if infra.empty:
+            print("No data to plot!")
+            return infra
 
         fig, ax1 = plt.subplots(figsize=(7, 4))
         first = infra_codes[0]
         d1 = infra[infra["indicator_code"] == first]
 
+        print(self.obs["indicator_code"].unique())
+
+        
+        print(f"Plotting {first} with {len(d1)} points")
         ax1.plot(d1["observation_date"], d1["value_numeric"], "o-", label=first)
         ax1.set_ylabel(first)
 
         if len(infra_codes) > 1:
             second = infra_codes[1]
             d2 = infra[infra["indicator_code"] == second]
+            print(f"Plotting {second} with {len(d2)} points")
             ax2 = ax1.twinx()
             ax2.plot(d2["observation_date"], d2["value_numeric"], "o-", label=second)
 
@@ -249,6 +264,7 @@ class EthiopiaFinancialInclusionEDA:
 
         plt.show()
         return infra
+
 
     # ------------------------------------------------------------------
     # Events
