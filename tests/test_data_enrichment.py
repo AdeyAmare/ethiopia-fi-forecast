@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 from pathlib import Path
-from src.data_enrichment import FinancialInclusionDataEnricher  # replace with your actual module name
+from src.data_enrichment import FinancialInclusionDataEnricher
 import tempfile
 
 # -----------------------------
@@ -37,6 +37,14 @@ REFERENCE_DATA = pd.DataFrame([
 # -----------------------------
 @pytest.fixture
 def temp_files():
+    """
+    Create temporary CSV files for dataset and reference codes for testing.
+
+    Yields
+    ------
+    tuple
+        (data_path, reference_path, temp_directory)
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         data_path = Path(tmpdir) / "data.csv"
         ref_path = Path(tmpdir) / "reference.csv"
@@ -50,6 +58,9 @@ def temp_files():
 # Tests
 # -----------------------------
 def test_load_data(temp_files):
+    """
+    Test loading of dataset and reference codes.
+    """
     data_path, ref_path, _ = temp_files
     enricher = FinancialInclusionDataEnricher(data_path, ref_path)
     enricher.load_data()
@@ -59,6 +70,9 @@ def test_load_data(temp_files):
     assert enricher.df.shape[0] == SAMPLE_DATA.shape[0]
 
 def test_add_observations(temp_files):
+    """
+    Test adding new observation records.
+    """
     data_path, ref_path, _ = temp_files
     enricher = FinancialInclusionDataEnricher(data_path, ref_path)
     enricher.load_data()
@@ -70,6 +84,9 @@ def test_add_observations(temp_files):
     assert len(enricher.enrichment_log) == 2
 
 def test_add_events(temp_files):
+    """
+    Test adding new event records.
+    """
     data_path, ref_path, _ = temp_files
     enricher = FinancialInclusionDataEnricher(data_path, ref_path)
     enricher.load_data()
@@ -79,6 +96,9 @@ def test_add_events(temp_files):
     assert len(enricher.enrichment_log) == 1
 
 def test_add_impact_links(temp_files):
+    """
+    Test adding new impact link records.
+    """
     data_path, ref_path, _ = temp_files
     enricher = FinancialInclusionDataEnricher(data_path, ref_path)
     enricher.load_data()
@@ -88,6 +108,14 @@ def test_add_impact_links(temp_files):
     assert len(enricher.enrichment_log) == 2  # 2 links added
 
 def test_run_full_task1(temp_files):
+    """
+    Test the full Task 1 pipeline:
+    - Load data
+    - Summarize dataset
+    - Check indicator coverage
+    - Add observations, events, and impact links
+    - Save outputs
+    """
     data_path, ref_path, tmpdir = temp_files
     enricher = FinancialInclusionDataEnricher(data_path, ref_path, output_dir=tmpdir)
     enricher.run_full_task1()

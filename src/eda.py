@@ -8,18 +8,45 @@ import logging
 
 class EthiopiaFinancialInclusionEDA:
     """
-    Task 2: Exploratory Data Analysis for Ethiopia Financial Inclusion
+    Exploratory Data Analysis (EDA) class for Ethiopia Financial Inclusion data.
 
-    Covers:
-    - Dataset overview & data quality
-    - Temporal coverage & gaps
-    - Access, Usage, Infrastructure analysis
-    - Event timelines & overlays
+    This class provides methods to explore, visualize, and generate insights 
+    from Ethiopia's financial inclusion dataset, including:
+    - Dataset overview and quality checks
+    - Temporal coverage analysis
+    - Pillar, access, usage, and infrastructure trends
+    - Event timelines and overlays
     - Correlation analysis
-    - Key insights & limitations
+    - Key insights and data quality reporting
+    - Analysis of new indicators (DIR_ / IND_)
+    
+    Attributes
+    ----------
+    df : pd.DataFrame
+        The raw dataset loaded from CSV.
+    obs : pd.DataFrame
+        Subset of the data containing observations.
+    events : pd.DataFrame
+        Subset of the data containing events.
+    links : pd.DataFrame
+        Subset of the data containing impact links.
+    output_dir : Path
+        Directory path to save figures.
+    logger : logging.Logger
+        Logger for informational messages.
     """
 
     def __init__(self, data_path: str | Path, output_dir: str | Path = "reports/figures"):
+        """
+        Initialize the EDA class by loading data and setting up subsets.
+
+        Parameters
+        ----------
+        data_path : str | Path
+            Path to the CSV file containing the dataset.
+        output_dir : str | Path, optional
+            Directory to save generated figures (default is "reports/figures").
+        """
         self.df = pd.read_csv(data_path)
 
         # Core subsets
@@ -56,6 +83,14 @@ class EthiopiaFinancialInclusionEDA:
     # Dataset Overview & Quality
     # ------------------------------------------------------------------
     def summarize_dataset(self):
+        """
+        Summarize the dataset by record type, pillar, source type, and confidence.
+
+        Returns
+        -------
+        dict
+            Dictionary containing counts for record_type, pillar, source_type, and confidence.
+        """
         summary = {
             "record_type": self.df["record_type"].value_counts(),
             "pillar": self.df["pillar"].value_counts(dropna=False),
@@ -70,6 +105,14 @@ class EthiopiaFinancialInclusionEDA:
         return summary
 
     def dataset_summary_table(self):
+        """
+        Generate a summary table of the dataset including counts, date range, and indicators.
+
+        Returns
+        -------
+        dict
+            Dictionary containing dataset statistics and temporal coverage.
+        """
         summary = {
             "total_records": len(self.df),
             "observations": len(self.obs),
@@ -88,6 +131,18 @@ class EthiopiaFinancialInclusionEDA:
         return summary
 
     def plot_confidence_distribution(self, save_fig=True):
+        """
+        Plot a bar chart showing the distribution of confidence levels in the dataset.
+
+        Parameters
+        ----------
+        save_fig : bool, optional
+            Whether to save the figure to the output directory (default is True).
+
+        Returns
+        -------
+        None
+        """
         plt.figure(figsize=(6, 4))
         self.df["confidence"].value_counts().plot(kind="bar")
         plt.title("Confidence Level Distribution")
@@ -103,6 +158,19 @@ class EthiopiaFinancialInclusionEDA:
     # Temporal Coverage
     # ------------------------------------------------------------------
     def temporal_coverage_heatmap(self, save_fig=True):
+        """
+        Generate a heatmap showing temporal coverage of indicators by year.
+
+        Parameters
+        ----------
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.DataFrame
+            Pivot table of counts of observations per indicator per year.
+        """
         coverage = self.obs.pivot_table(
             index="indicator_code",
             columns="year",
@@ -123,6 +191,19 @@ class EthiopiaFinancialInclusionEDA:
         return coverage
 
     def identify_sparse_indicators(self, min_points=2):
+        """
+        Identify indicators with fewer than a specified minimum number of observations.
+
+        Parameters
+        ----------
+        min_points : int, optional
+            Minimum number of observations required to not be considered sparse (default is 2).
+
+        Returns
+        -------
+        pd.Series
+            Series of sparse indicators with their observation counts.
+        """
         counts = self.obs.groupby("indicator_code").size()
         sparse = counts[counts < min_points]
 
@@ -135,6 +216,19 @@ class EthiopiaFinancialInclusionEDA:
     # Pillar & Access Analysis
     # ------------------------------------------------------------------
     def pillar_distribution(self, save_fig=True):
+        """
+        Plot a bar chart showing the distribution of observations by pillar.
+
+        Parameters
+        ----------
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.Series
+            Counts of observations per pillar.
+        """
         plt.figure(figsize=(6, 4))
         self.obs["pillar"].value_counts().plot(kind="bar")
         plt.title("Observation Distribution by Pillar")
@@ -147,6 +241,19 @@ class EthiopiaFinancialInclusionEDA:
         return self.obs["pillar"].value_counts()
 
     def plot_account_ownership(self, save_fig=True):
+        """
+        Plot the trend of account ownership over time.
+
+        Parameters
+        ----------
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered account ownership observations sorted by date.
+        """
         acc = self.obs[self.obs["indicator_code"] == "ACC_OWNERSHIP"].sort_values(
             "observation_date"
         )
@@ -165,6 +272,19 @@ class EthiopiaFinancialInclusionEDA:
         return acc
 
     def calculate_growth_rates(self, indicator_code):
+        """
+        Calculate period-to-period growth in percentage points for a given indicator.
+
+        Parameters
+        ----------
+        indicator_code : str
+            The indicator code to calculate growth rates for.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame including a new 'growth_pp' column representing period-to-period growth.
+        """
         df = (
             self.obs[self.obs["indicator_code"] == indicator_code]
             .sort_values("observation_date")
@@ -174,6 +294,19 @@ class EthiopiaFinancialInclusionEDA:
         return df
 
     def calculate_cagr(self, indicator_code):
+        """
+        Calculate the compound annual growth rate (CAGR) for a given indicator.
+
+        Parameters
+        ----------
+        indicator_code : str
+            The indicator code to calculate CAGR for.
+
+        Returns
+        -------
+        float | np.nan
+            CAGR as a decimal fraction or np.nan if insufficient data.
+        """
         df = (
             self.obs[self.obs["indicator_code"] == indicator_code]
             .sort_values("observation_date")
@@ -196,6 +329,21 @@ class EthiopiaFinancialInclusionEDA:
     # Usage Analysis
     # ------------------------------------------------------------------
     def plot_usage_trends(self, indicators, save_fig=True):
+        """
+        Plot usage trends over time for a list of indicators.
+
+        Parameters
+        ----------
+        indicators : list
+            List of indicator codes to include in the plot.
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered data used for plotting.
+        """
         usage = self.obs[self.obs["indicator_code"].isin(indicators)].copy()
 
         plt.figure(figsize=(7, 4))
@@ -220,6 +368,21 @@ class EthiopiaFinancialInclusionEDA:
     # Infrastructure
     # ------------------------------------------------------------------
     def plot_infrastructure_indicators(self, infra_codes, save_fig=True):
+        """
+        Plot one or two infrastructure indicators on a single figure, potentially with dual y-axis.
+
+        Parameters
+        ----------
+        infra_codes : list
+            List of 1 or 2 indicator codes to plot.
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered infrastructure data used for plotting.
+        """
         infra = self.obs[self.obs["indicator_code"].isin(infra_codes)].sort_values(
             "observation_date"
         )
@@ -265,11 +428,23 @@ class EthiopiaFinancialInclusionEDA:
         plt.show()
         return infra
 
-
     # ------------------------------------------------------------------
     # Events
     # ------------------------------------------------------------------
     def plot_event_timeline(self, save_fig=True):
+        """
+        Plot a scatter timeline of all events.
+
+        Parameters
+        ----------
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.DataFrame
+            Event data used for plotting.
+        """
         events = self.events.copy()
         events["event_date"] = pd.to_datetime(
             events["observation_date"], errors="coerce"
@@ -292,6 +467,20 @@ class EthiopiaFinancialInclusionEDA:
         return events
 
     def plot_indicator_with_events(self, indicator_code, save_fig=True):
+        """
+        Plot an indicator series over time with event overlays.
+
+        Parameters
+        ----------
+        indicator_code : str
+            The indicator code to plot.
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        None
+        """
         series = self.obs[self.obs["indicator_code"] == indicator_code]
         events = self.events.copy()
         events["event_date"] = pd.to_datetime(
@@ -317,6 +506,19 @@ class EthiopiaFinancialInclusionEDA:
     # Correlation
     # ------------------------------------------------------------------
     def correlation_matrix(self, indicators):
+        """
+        Compute correlation matrix for a list of indicators.
+
+        Parameters
+        ----------
+        indicators : list
+            List of indicator codes.
+
+        Returns
+        -------
+        pd.DataFrame
+            Correlation matrix of indicators.
+        """
         df = self.obs[self.obs["indicator_code"].isin(indicators)].copy()
         df["value_numeric"] = pd.to_numeric(df["value_numeric"], errors="coerce")
 
@@ -330,6 +532,21 @@ class EthiopiaFinancialInclusionEDA:
         return pivot.corr()
 
     def plot_correlation(self, indicators, save_fig=True):
+        """
+        Plot a heatmap of the correlation matrix for selected indicators.
+
+        Parameters
+        ----------
+        indicators : list
+            List of indicator codes.
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+
+        Returns
+        -------
+        pd.DataFrame
+            Correlation matrix.
+        """
         corr = self.correlation_matrix(indicators)
 
         plt.figure(figsize=(9, 7))
@@ -346,6 +563,21 @@ class EthiopiaFinancialInclusionEDA:
         return corr
 
     def strongest_correlations(self, indicators, top_n=5):
+        """
+        Identify the strongest correlations between indicators.
+
+        Parameters
+        ----------
+        indicators : list
+            List of indicator codes.
+        top_n : int, optional
+            Number of top correlations to return (default is 5).
+
+        Returns
+        -------
+        pd.DataFrame
+            Top correlated indicator pairs.
+        """
         corr = self.correlation_matrix(indicators)
 
         pairs = []
@@ -370,6 +602,14 @@ class EthiopiaFinancialInclusionEDA:
     # Insights & Data Quality
     # ------------------------------------------------------------------
     def generate_key_insights(self):
+        """
+        Generate key insights based on access, usage, and infrastructure indicators.
+
+        Returns
+        -------
+        dict
+            Dictionary of calculated insights such as growth rates, gaps, and coverage.
+        """
         insights = {}
 
         acc = self.obs[self.obs["indicator_code"] == "ACC_OWNERSHIP"].sort_values(
@@ -399,6 +639,14 @@ class EthiopiaFinancialInclusionEDA:
         return insights
 
     def data_quality_report(self):
+        """
+        Generate a data quality report including counts and shares of records.
+
+        Returns
+        -------
+        dict
+            Dictionary of data quality metrics.
+        """
         return {
             "findex_points": self.obs[
                 self.obs["indicator_code"] == "ACC_OWNERSHIP"
@@ -414,6 +662,14 @@ class EthiopiaFinancialInclusionEDA:
     # New Indicators (DIR_ / IND_)
     # ------------------------------------------------------------------
     def analyze_new_indicators(self):
+        """
+        Analyze newly added direct (DIR_) and indirect (IND_) indicators.
+
+        Returns
+        -------
+        dict
+            Dictionary containing counts of new indicators and observations.
+        """
         direct = self.obs[self.obs["indicator_code"].str.startswith("DIR_", na=False)]
         indirect = self.obs[self.obs["indicator_code"].str.startswith("IND_", na=False)]
 

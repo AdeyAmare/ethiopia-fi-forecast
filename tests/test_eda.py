@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import tempfile
-from src.eda import EthiopiaFinancialInclusionEDA  # replace with your module name
+from src.eda import EthiopiaFinancialInclusionEDA
 
 # -----------------------------
 # Sample data for testing edge cases
@@ -74,6 +74,14 @@ EDGE_CASE_DATA = pd.DataFrame([
 # -----------------------------
 @pytest.fixture
 def temp_csv():
+    """
+    Create a temporary CSV file containing edge case data for testing.
+
+    Yields
+    ------
+    tuple
+        (data_path: Path to CSV, temp_dir: Path to temporary directory)
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         data_path = Path(tmpdir) / "edge_case_data.csv"
         EDGE_CASE_DATA.to_csv(data_path, index=False)
@@ -83,6 +91,10 @@ def temp_csv():
 # Tests
 # -----------------------------
 def test_empty_and_missing_values(temp_csv):
+    """
+    Test handling of missing dates and NaN values in observations.
+    Also checks dataset subsets, sparse indicators, and data quality.
+    """
     data_path, tmpdir = temp_csv
     eda = EthiopiaFinancialInclusionEDA(data_path, output_dir=tmpdir)
 
@@ -102,6 +114,11 @@ def test_empty_and_missing_values(temp_csv):
     assert dq["impact_links"] == 1
 
 def test_growth_and_cagr_edge_cases(temp_csv):
+    """
+    Test growth and CAGR calculations with:
+    - Single observation
+    - Non-numeric or invalid dates
+    """
     data_path, tmpdir = temp_csv
     eda = EthiopiaFinancialInclusionEDA(data_path, output_dir=tmpdir)
 
@@ -120,15 +137,21 @@ def test_growth_and_cagr_edge_cases(temp_csv):
     assert np.isnan(cagr2)
 
 def test_correlation_edge_cases(temp_csv):
+    """
+    Test correlation matrix with only one valid numeric column and NaN values.
+    """
     data_path, tmpdir = temp_csv
     eda = EthiopiaFinancialInclusionEDA(data_path, output_dir=tmpdir)
 
-    # Correlation with only one valid numeric column
+    # Correlation with one valid numeric column
     corr = eda.correlation_matrix(["ACC_OWNERSHIP", "USG_P2P_COUNT"])
     # USG_P2P_COUNT is NaN, correlation should be NaN
     assert np.isnan(corr.loc["ACC_OWNERSHIP", "USG_P2P_COUNT"])
 
 def test_new_indicators_analysis(temp_csv):
+    """
+    Test analysis of new direct (DIR_) and indirect (IND_) indicators.
+    """
     data_path, tmpdir = temp_csv
     eda = EthiopiaFinancialInclusionEDA(data_path, output_dir=tmpdir)
 
@@ -139,10 +162,13 @@ def test_new_indicators_analysis(temp_csv):
     assert result["indirect_observations"] == 0
 
 def test_plot_functions_do_not_fail(temp_csv):
+    """
+    Ensure that all plotting functions run without errors on edge case data.
+    Plots are not saved (save_fig=False) to avoid file I/O during testing.
+    """
     data_path, tmpdir = temp_csv
     eda = EthiopiaFinancialInclusionEDA(data_path, output_dir=tmpdir)
 
-    # Just test that plotting functions run without errors
     eda.plot_confidence_distribution(save_fig=False)
     eda.temporal_coverage_heatmap(save_fig=False)
     eda.pillar_distribution(save_fig=False)
