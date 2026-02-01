@@ -8,12 +8,29 @@ from datetime import datetime
 
 class FinancialInclusionDataEnricher:
     """
-    Task 1:
-    - Load unified dataset
-    - Validate schema using reference_codes
-    - Explore dataset
-    - Enrich with new observations, events, and impact_links
-    - Log all additions
+    Task 1: Financial Inclusion Data Enrichment
+
+    This class provides utilities to:
+    - Load and validate a unified dataset
+    - Explore dataset summary and indicator coverage
+    - Enrich the dataset with new observations, events, and impact links
+    - Track all enrichment actions in a log
+    - Save the enriched dataset and log
+
+    Attributes
+    ----------
+    df : pd.DataFrame
+        Main dataset after loading.
+    reference : pd.DataFrame
+        Reference codes for schema validation.
+    enrichment_log : list
+        Log of all enrichment actions.
+    collection_date : date
+        Date when data enrichment was performed.
+    collected_by : str
+        Name of the person performing enrichment.
+    logger : logging.Logger
+        Logger for tracking messages.
     """
 
     def __init__(
@@ -23,6 +40,20 @@ class FinancialInclusionDataEnricher:
         output_dir: str = "data/processed",
         collected_by: str = "Adey Gebrewold"
     ):
+        """
+        Initialize the data enricher with dataset paths and output directory.
+
+        Parameters
+        ----------
+        data_path : str
+            Path to the unified dataset CSV.
+        reference_path : str
+            Path to the reference codes CSV for schema validation.
+        output_dir : str, optional
+            Directory to save outputs (default is "data/processed").
+        collected_by : str, optional
+            Name of the person performing enrichment (default is "Adey Gebrewold").
+        """
         self.data_path = Path(data_path)
         self.reference_path = Path(reference_path)
         self.output_dir = Path(output_dir)
@@ -38,6 +69,14 @@ class FinancialInclusionDataEnricher:
         self.enrichment_log = []
 
     def _setup_logger(self):
+        """
+        Set up a logger for the enrichment process.
+
+        Returns
+        -------
+        logging.Logger
+            Configured logger.
+        """
         logger = logging.getLogger("Task1-Enrichment")
         logger.setLevel(logging.INFO)
 
@@ -54,6 +93,11 @@ class FinancialInclusionDataEnricher:
     # LOADERS
     # ------------------------------------------------------------------
     def load_data(self):
+        """
+        Load the unified dataset and reference codes into dataframes.
+
+        Sets `self.df` and `self.reference`.
+        """
         self.logger.info("Loading unified dataset and reference codes")
         self.df = pd.read_csv(self.data_path)
         self.reference = pd.read_csv(self.reference_path)
@@ -64,6 +108,16 @@ class FinancialInclusionDataEnricher:
     # BASIC EXPLORATION
     # ------------------------------------------------------------------
     def summarize_dataset(self):
+        """
+        Generate a summary of key dataset columns: record_type, pillar, source_type, confidence.
+
+        Saves summary CSVs for each column.
+
+        Returns
+        -------
+        dict
+            Dictionary of value counts for each column.
+        """
         self.logger.info("Generating dataset summary")
 
         summary = {
@@ -79,6 +133,18 @@ class FinancialInclusionDataEnricher:
         return summary
 
     def indicator_coverage(self):
+        """
+        Calculate coverage for each indicator:
+        - First and last observation dates
+        - Count of observations
+
+        Saves the coverage to CSV.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with min, max, and count of observations per indicator.
+        """
         coverage = (
             self.df[self.df["record_type"] == "observation"]
             .groupby("indicator_code")["observation_date"]
@@ -93,9 +159,30 @@ class FinancialInclusionDataEnricher:
     # ENRICHMENT UTILITIES
     # ------------------------------------------------------------------
     def _log_enrichment(self, record):
+        """
+        Append a record to the enrichment log.
+
+        Parameters
+        ----------
+        record : dict
+            Record that was added to the dataset.
+        """
         self.enrichment_log.append(record)
 
     def _generate_record_id(self, prefix="REC"):
+        """
+        Generate a new unique record ID based on existing IDs.
+
+        Parameters
+        ----------
+        prefix : str, optional
+            Prefix for the new record ID (default is "REC").
+
+        Returns
+        -------
+        str
+            Generated record ID.
+        """
         existing = self.df["record_id"].str.extract(r"_(\d+)").dropna().astype(int)
         next_id = existing.max().values[0] + 1
         return f"{prefix}_{next_id:04d}"
@@ -105,12 +192,12 @@ class FinancialInclusionDataEnricher:
     # ------------------------------------------------------------------
     def add_observations(self):
         """
-        Add useful proxy indicators for forecasting:
+        Add new observations to the dataset.
+
+        Example proxies:
         - Smartphone penetration
         - Internet usage rate
-        - Agent density proxy
         """
-
         new_obs = [
             {
                 "record_type": "observation",
@@ -164,6 +251,9 @@ class FinancialInclusionDataEnricher:
     # ENRICHMENT: EVENTS
     # ------------------------------------------------------------------
     def add_events(self):
+        """
+        Add new events to the dataset.
+        """
         new_events = [
             {
                 "record_type": "event",
@@ -194,6 +284,9 @@ class FinancialInclusionDataEnricher:
     # ENRICHMENT: IMPACT LINKS
     # ------------------------------------------------------------------
     def add_impact_links(self):
+        """
+        Add new impact links to the dataset.
+        """
         links = [
             {
                 "record_type": "impact_link",
@@ -235,7 +328,14 @@ class FinancialInclusionDataEnricher:
     # SAVE OUTPUTS
     # ------------------------------------------------------------------
     def save_outputs(self, output_dir: str | Path | None = None):
-        # Use provided directory or default
+        """
+        Save the enriched dataset and enrichment log to disk.
+
+        Parameters
+        ----------
+        output_dir : str | Path | None, optional
+            Directory to save outputs. Uses default if None.
+        """
         output_dir = Path(output_dir) if output_dir else self.output_dir
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -250,11 +350,18 @@ class FinancialInclusionDataEnricher:
 
         self.logger.info(f"Saved enriched dataset and enrichment log to {output_dir}")
 
-
     # ------------------------------------------------------------------
     # FULL PIPELINE
     # ------------------------------------------------------------------
     def run_full_task1(self):
+        """
+        Execute the full Task 1 pipeline:
+        - Load data
+        - Summarize dataset
+        - Check indicator coverage
+        - Add observations, events, and impact links
+        - Save outputs
+        """
         self.load_data()
         self.summarize_dataset()
         self.indicator_coverage()
