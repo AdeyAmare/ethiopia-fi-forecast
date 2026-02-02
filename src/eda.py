@@ -104,6 +104,14 @@ class EthiopiaFinancialInclusionEDA:
 
         return summary
 
+    def load_impact_links(self, links_path: str | Path):
+        """
+        Load impact links from a separate CSV file after enrichment.
+        """
+        self.links = pd.read_csv(links_path)
+        self.logger.info(f"Impact links loaded: {len(self.links)} records")
+
+
     def dataset_summary_table(self):
         """
         Generate a summary table of the dataset including counts, date range, and indicators.
