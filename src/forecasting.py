@@ -5,7 +5,6 @@ import pickle
 from sklearn.linear_model import LinearRegression
 import logging
 import matplotlib.pyplot as plt
-import scipy.stats as stats
 
 from src.event_impact_modeling import EventImpactModeler
 
@@ -19,6 +18,7 @@ class FinancialInclusionForecaster:
     - Scenario analysis (optimistic, base, pessimistic)
     - Forecast visualization
     - Event impact summary
+    - Supports all indicators in the dataset
     """
 
     def __init__(self, model: EventImpactModeler, forecast_horizon: int = 36):
@@ -163,7 +163,16 @@ class FinancialInclusionForecaster:
         return scenario_dfs
 
     # ------------------------------------------------------------
-    # 5. Save forecast artifacts
+    # 5. Forecast all indicators in the dataset
+    # ------------------------------------------------------------
+    def forecast_all_indicators(self):
+        all_indicators = self.model.obs["indicator_code"].unique()
+        self.logger.info(f"Generating forecasts for {len(all_indicators)} indicators...")
+        for indicator in all_indicators:
+            self.scenario_forecast(indicator)
+
+    # ------------------------------------------------------------
+    # 6. Save forecast artifacts
     # ------------------------------------------------------------
     def save_forecast_artifacts(self, output_path: str | Path):
         output_path = Path(output_path)
@@ -175,7 +184,7 @@ class FinancialInclusionForecaster:
         self.logger.info(f"Saved forecast artifacts to {output_path}")
 
     # ------------------------------------------------------------
-    # 6. Visualization of forecasts and scenarios
+    # 7. Visualization of forecasts and scenarios
     # ------------------------------------------------------------
     def plot_forecast(self, indicator_code: str):
         if indicator_code not in self.forecasts:
@@ -194,7 +203,7 @@ class FinancialInclusionForecaster:
         plt.show()
 
     # ------------------------------------------------------------
-    # 7. Event impact summary
+    # 8. Event impact summary
     # ------------------------------------------------------------
     def summarize_event_impacts(self, indicator_code: str):
         links = self.model.links[self.model.links["related_indicator"] == indicator_code]

@@ -4,3 +4,5 @@ pandas
 seaborn
 pytest
 scikit-learn 
+plotly
+streamlit
