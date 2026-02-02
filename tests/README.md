@@ -1,6 +1,6 @@
 # `tests` – Unit Tests for Financial Inclusion Modules
 
-This folder contains **unit tests** for the core source code in `src/`. The tests validate functionality, edge cases, and data handling for both **data enrichment** and **exploratory data analysis** pipelines.
+This folder contains **unit tests** for the core source code in `src/`. The tests validate functionality, edge cases, and data handling for both **data enrichment**, **exploratory data analysis**, and **event impact modeling** pipelines.
 
 ## 📁 Structure
 
@@ -18,6 +18,15 @@ This folder contains **unit tests** for the core source code in `src/`. The test
   * New indicators analysis
   * Ensuring plotting functions run without errors
 
+* `test_event_impact_modeler.py` – Tests the `EventImpactModeler` class:
+
+  * Loading events, observations, and impact links, including missing or invalid data
+  * Generating event-indicator summaries
+  * Building association matrices with unknown magnitudes or missing events
+  * Simulating indicator paths with ramping effects and empty observation sets
+  * Validating simulated vs actual values and calculating errors
+  * Edge case handling: missing dates, invalid magnitudes, nonexistent indicators, and NaNs
+
 ## ⚡ Running Tests
 
 Use **pytest** to run all tests:
@@ -25,7 +34,7 @@ Use **pytest** to run all tests:
 ```bash
 cd <project_root>
 pytest tests/
-```
+````
 
 * Temporary CSV files are used for testing; no permanent data is modified.
 * Tests cover normal scenarios, edge cases, and plotting function execution.
@@ -33,5 +42,5 @@ pytest tests/
 ## 📝 Notes
 
 * Ensure that `src/` is in your Python path before running tests.
-* Tests are designed to catch regressions and ensure the reliability of enrichment and EDA pipelines.
+* Tests are designed to catch regressions and ensure the reliability of enrichment, EDA, and event impact modeling pipelines.
 
